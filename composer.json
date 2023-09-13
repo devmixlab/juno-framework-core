@@ -1,0 +1,18 @@
+{
+    "name": "juno/framework",
+    "description": "framework",
+    "autoload": {
+        "psr-4": {
+            "Juno\\": "src/"
+        },
+        "files": [
+            "src/helpers.php"
+        ]
+    },
+    "authors": [
+        {
+            "name": "Roman Linnik"
+        }
+    ],
+    "require": {}
+}
