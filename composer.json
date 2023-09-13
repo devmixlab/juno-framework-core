@@ -1,5 +1,5 @@
 {
-    "name": "juno/framework",
+    "name": "devmixlab/juno-framework-core",
     "description": "framework",
     "autoload": {
         "psr-4": {
@@ -11,7 +11,7 @@
     },
     "authors": [
         {
-            "name": "Roman Linnik"
+            "name": "Roman Linnik devmixlab"
         }
     ],
     "require": {}
