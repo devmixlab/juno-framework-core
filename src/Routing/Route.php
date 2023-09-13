@@ -120,7 +120,7 @@ class Route{
       return $result;
     }else if($result instanceof View){
       return response()
-        ->text($result->make());
+        ->textHtml($result->make());
     }
 
   }
