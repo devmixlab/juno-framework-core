@@ -86,11 +86,9 @@ class Route{
   protected function call() : mixed
   {
     $params = $this->getParametersForFunc();
-//    dd($params);
 
     if(is_callable($this->action)){
       $params = $this->addDependenciesToParams(action: $this->action, params: $params);
-//      dd($params);
       $result = call_user_func_array($this->action, $params ?? []);
     }else if(
       is_string($this->controller) && !empty($this->controller) &&
@@ -322,7 +320,7 @@ class Route{
     }
 
 //    if(preg_match("/^((\/)?(({){1}([0-9a-z_]+)((\?)?}){1}|([0-9a-z_]+)))+(\/)?$/", $uri) == 0)
-    if(preg_match("/^((\/){1}(({){1}([0-9a-z_]+)(}){1}|([0-9a-z_]+)))+(((\/){1}({){1}[0-9a-z_]+(\?){1}(}){1})+)?$/", $uri) == 0)
+    if(preg_match("/^((\/){1}(({){1}([0-9a-z_-]+)(}){1}|([0-9a-z_-]+)))+(((\/){1}({){1}[0-9a-z_-]+(\?){1}(}){1})+)?$/", $uri) == 0)
       throw new BadRouterException("Wrong route`s uri - `$uri`");
 
     $this->uri .= rtrim($uri, '/');

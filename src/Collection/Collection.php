@@ -26,84 +26,159 @@ class Collection extends InitCollection {
    * wrap, zip
    */
 
+
+  /*
+   * Iterates through the collection and passes each value to the given callback.
+   * The callback is free to modify the item and return it,
+   * thus forming a new collection of modified items
+   */
   public function map(Closure $fn) : Collection
   {
-    $list = array_map($fn, $this->list);
+    $list = [];
+    foreach($this->list as $k => $v)
+      $list[$k] = $fn($v, $k);
     return new Collection($list);
   }
 
+  /*
+   * Iterates over the collection and calls the given callback
+   * with each item in the collection
+   * The items in the collection will be replaced
+   * by the values returned by the callback
+   */
   public function transform(Closure $fn) : Collection
   {
-    $this->list = array_map($fn, $this->list);
+    foreach($this->list as $k => $v)
+      $this->list[$k] = $fn($v, $k);
     return $this;
   }
 
+  /*
+   * Filters the collection using the given closure
+   * The closure should return true if the item should be removed
+   * from the resulting collection
+   */
   public function reject(Closure $fn) : Collection
   {
     $res = Arr::reject($this->list, $fn);
     return new Collection($res);
   }
 
+  /*
+   * Returns the collection`s array
+   */
   public function toArray() : array
   {
     return $this->list;
   }
 
+  /*
+   * Returns the collection`s array
+   */
   public function all() : array
   {
     return $this->list;
   }
 
-  public function avg(string $key) : float
+  /*
+   * Average value of a given key
+   */
+  public function avg(string $key = null) : float
   {
-    $arr = array_filter(array_column($this->list, $key), fn($itm) => is_numeric($itm));
-    if(empty($arr))
-      return 0;
-
-    return (array_sum($arr) / count($arr));
+    return Arr::avg($this->list, $key);
   }
 
-  public function chunk(int $length) : Chunks
+  /*
+   * Breaks the collection into multiple,
+   * smaller collections of a given size
+   */
+  public function chunk(int $length) : Collection
   {
-    return new Chunks($this, $length);
+    $chunks = [];
+
+    $chunk = function(array $data, int $length) use (&$chunk, &$chunks){
+      $chunk_arr = array_slice($data, 0, $length);
+      $chunks[] = new Collection($chunk_arr);
+
+      $left = array_slice($data, $length);
+      if(!empty($left))
+        $chunk($left, $length);
+    };
+
+    $chunk($this->list, $length);
+    return new Collection($chunks);
   }
 
+  /*
+   * Collapses a collection of arrays into a single,
+   * flat collection (1 level depth)
+   */
   public function collapse() : Collection
   {
-    return new Collection(Arr::collapse($this->list));
+    return new Collection(Arr::flatten($this->list, 1));
   }
 
+  /*
+   * Returns a new Collection instance
+   * with the items currently in the collection
+   */
   public function collect() : Collection
   {
     return new Collection($this->list);
   }
 
-  public function combine(array $values, bool $ignore_different_length = true) : Collection
+  /*
+   * Combines the values of the collection, as keys,
+   * with the values of another array or collection
+   */
+  public function combine(Collection|array $values, bool $ignore_different_length = true) : Collection
   {
+    if($values instanceof Collection)
+      $values = $values->all();
+
     return new Collection(Arr::combine($this->list, $values));
   }
 
-  public function concat(array $values) : Collection
+  /*
+   * Appends the given array or collection's values
+   * onto the end of another collection
+   */
+  public function concat(Collection|array $values) : Collection
   {
+    if($values instanceof Collection)
+      $values = $values->all();
+
     $concatenated = array_merge(array_values($this->list), array_values($values));
     return new Collection($concatenated);
   }
 
-  public function contains($value, string $key = null) : bool
+  /*
+   * Determines whether the collection contains a given item
+   */
+  public function contains(Closure|string $key, mixed $value = null) : bool
   {
-    return Arr::contains($this->list, $value, $key);
+    return Arr::contains($this->list, $key, $value);
   }
 
-  public function doesntContain($value, string $key = null) : bool
+  /*
+   * Determines whether the collection does not contain a given item
+   */
+  public function doesntContain(Closure|string $key, mixed $value = null) : bool
   {
-    return !$this->contains($value, $key);
+    return !$this->contains($key, $value);
   }
 
+  /*
+   * Determines whether the collection contains a single item
+   */
   public function containsOneItem() : bool
   {
-    return count($this->list) === 1;
+    return $this->count() === 1;
   }
 
+  /*
+   * Returns the total number of items in the collection
+   */
   public function count() : int
   {
     return count($this->list);

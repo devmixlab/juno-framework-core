@@ -3,8 +3,11 @@ namespace Juno\Collection;
 
 use Closure;
 use ReflectionFunction;
+use Iterator;
 
-class InitCollection {
+class InitCollection implements Iterator {
+
+  private $position = 0;
 
   public int $test = 4234;
 
@@ -14,6 +17,7 @@ class InitCollection {
 
   public function __construct(protected array $list)
   {
+    $this->position = 0;
     foreach(self::$macro_methods as $name => $method)
       $this->macro_methods_obg[$name] = Closure::bind($method, $this);
   }
@@ -21,6 +25,31 @@ class InitCollection {
   static public function macro(string $name, Closure $fn)
   {
     self::$macro_methods[$name] = $fn;
+  }
+
+  public function rewind(): void
+  {
+    $this->position = 0;
+  }
+
+  public function current(): mixed
+  {
+    return $this->list[$this->position];
+  }
+
+  public function key(): mixed
+  {
+    return $this->position;
+  }
+
+  public function next(): void
+  {
+    ++$this->position;
+  }
+
+  public function valid(): bool
+  {
+    return isset($this->list[$this->position]);
   }
 
 //  protected function isTypeOf($value, string $type) : bool

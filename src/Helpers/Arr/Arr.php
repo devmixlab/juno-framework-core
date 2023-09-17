@@ -11,6 +11,19 @@ class Arr{
     return array_values(array_filter($data, fn($itm) => !empty($itm)));
   }
 
+  /*
+   * Average value of a given key
+   */
+  public function avg(array $data, string $key = null) : float
+  {
+    $arr = !is_null($key) ? array_column($data, $key) : $data;
+    $arr = array_filter($arr, fn($itm) => is_numeric($itm));
+    if(empty($arr))
+      return 0;
+
+    return (array_sum($arr) / count($arr));
+  }
+
   public function replace(array $data, array $replacement) : array
   {
     if(empty($data))
@@ -162,21 +175,23 @@ class Arr{
    */
   public function flatten(array $data, int $depth = null) : array
   {
-    $flattened = [];
-    $flatten = function(array $data, int $current_depth) use ($depth, &$flatten, &$flattened) {
+    $flatten = function(array $data, int $current_depth = 1) use ($depth, &$flatten) {
+      $flattened = [];
       foreach($data as $k => $v){
-        if(is_array($v) && (
-          (is_null($depth)) ||
-          (!is_null($depth) && $current_depth <= $depth)
-        )){
-          $flatten($v, $current_depth + 1);
+        if($current_depth <= $depth) {
+          if (is_array($v)) {
+            $v = $flatten($v, $current_depth + 1);
+            $flattened = array_merge($flattened, $v);
+          }
         }else{
-          $flattened[$k] = $v;
+          $flattened[] = $v;
         }
       }
+
+      return $flattened;
     };
 
-    $flatten($data, 1);
+    $flattened = $flatten($data);
 
     return $flattened;
   }
@@ -233,23 +248,31 @@ class Arr{
     return count($data) == count($res);
   }
 
-  public function contains(array $data, $value, string $key = null) : bool
+  public function contains(array $data, Closure|string $key, mixed $value = null) : bool
   {
-    if(is_string($value) && !empty($value) && !is_null($key)){
-      if(!$this->existsByDotPattern($data, $key))
-        return false;
+    if(is_string($key)){
+      if(!is_null($value)){
+        if(empty($key))
+          return false;
 
-      $val = $this->getByDotPattern($data, $key);
-      return $value == $val;
+        if(!$this->existsByDotPattern($data, $key))
+          return false;
+
+        $val = $this->getByDotPattern($data, $key);
+        return $value == $val;
+      }else{
+        return in_array($key, $data);
+      }
     }
 
-    if(!($value instanceof Closure)){
-      $index = array_search($value, $data);
-      return $index === false ? false : true;
+    if($key instanceof Closure){
+      foreach($data as $k => $v){
+        if($key($v, $k) === true)
+          return true;
+      }
     }
 
-    $list = array_filter($data, $value);
-    return !empty($list);
+    return false;
   }
 
   public function filter(array $data, Closure $fn) : array
@@ -259,9 +282,16 @@ class Arr{
 
   public function reject(array $data, Closure $fn) : array
   {
-    return array_filter($data, function($itm) use ($fn) {
-      return !$fn($itm);
-    });
+    $data_new = [];
+    foreach($data as $k => $v){
+      if(!$fn($v, $k))
+        $data_new[$k] = $v;
+    }
+
+    return $data_new;
+//    return array_filter($data, function($itm) use ($fn) {
+//      return !$fn($itm);
+//    });
   }
 
   public function each(array $data, Closure $fn) : void
@@ -307,15 +337,6 @@ class Arr{
     }
 
     return $found;
-  }
-
-  public function collapse(array $data) : array
-  {
-    $collapsed_arr = [];
-    foreach($data as $v)
-      $collapsed_arr = array_merge($collapsed_arr, $v);
-
-    return $collapsed_arr;
   }
 
   public function combine(array $keys, array $values, bool $ignore_different_length = true) : array
