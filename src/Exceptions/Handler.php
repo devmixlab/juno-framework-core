@@ -13,12 +13,17 @@ class Handler
 
   public function render() : string
   {
-    $str = core_view('exception', [
-      'exception' => get_class($this->e),
-      'message' => $this->e->getMessage(),
-      'code' => $this->e->getCode(),
-      'trace' => $this->makeCustomTrace(),
-    ])->make();
+    try{
+      $str = core_view('exception', [
+        'exception' => get_class($this->e),
+        'message' => $this->e->getMessage(),
+        'code' => $this->e->getCode(),
+        'trace' => $this->makeCustomTrace(),
+      ])->make();
+    }catch(\Exception $e){
+      echo $e;
+      die();
+    }
 
     return $str;
   }

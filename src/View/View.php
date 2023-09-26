@@ -5,39 +5,105 @@ use DOMDocument;
 
 class View{
 
+  protected string $component_prefix = 'x-';
+
   protected string $view_path;
   protected Parser $parser;
 
   protected string $html;
 
-  public function __construct(protected string $path, protected array $params = [], bool $is_core = false)
-  {
-    if(strpos($path, DIRECTORY_SEPARATOR)){
-      $this->view_path = $path;
-    }else if(!$is_core && defined('VIEWS_PATH')){
-      $this->view_path = VIEWS_PATH . str_replace(".",DIRECTORY_SEPARATOR, $path) . '.php';
-    }else if($is_core){
-//      dd(__DIR__);
-      $this->view_path = __DIR__ . DIRECTORY_SEPARATOR . 'resources' . DIRECTORY_SEPARATOR;
-      $this->view_path .= str_replace(".",DIRECTORY_SEPARATOR, $path) . '.php';
-//      dd($this->view_path);
-    }
-//    $this->view_path = VIEWS_PATH . str_replace(".",DIRECTORY_SEPARATOR, $path) . '.php';
-//    $this->parser = new Parser($this->view_path);
+  protected $doc;
+  protected array $directives = [];
 
-//    $path_arr = explode('.', $path);
-//    dd($this->view_path);
-//    $path = rtrim($path, .);
+  protected $html_with_empty_body;
+
+  protected string $core_path = __DIR__ . DIRECTORY_SEPARATOR . 'resources' . DIRECTORY_SEPARATOR;
+
+  public function __construct(string $path, protected array $params = [], bool $is_core = false)
+  {
+//    throw new \Juno\Exceptions\ViewException("Wrong content");
+
+    $path = str_replace(".",DIRECTORY_SEPARATOR, $path);
+    $this->view_path = ($is_core ? $this->core_path : VIEW_PATH) . $path . '.php';
+
+
+//    if(strpos($path, DIRECTORY_SEPARATOR)){
+//      $this->view_path = $path;
+//    }else if(!$is_core && defined('VIEWS_PATH')){
+//      $this->view_path = VIEWS_PATH . str_replace(".",DIRECTORY_SEPARATOR, $path) . '.php';
+//    }else if($is_core){
+////      $this->view_path = __DIR__ . DIRECTORY_SEPARATOR . 'resources' . DIRECTORY_SEPARATOR;
+//      $this->view_path .= str_replace(".",DIRECTORY_SEPARATOR, $path) . '.php';
+//    }
+  }
+
+  public function make() : string
+  {
+//    libxml_use_internal_errors(true);
+    $this->html = $this->loadFile($this->view_path);
+//    ddh($this->html);
+    $this->resolveHtml();
+
+//    ddh($this->html);
+
+    $this->html = $this->applyDirectives($this->html);
+
+//    $this->html_with_empty_body
+
+    if(!empty($this->html_with_empty_body)){
+      $this->html_with_empty_body = $this->applyDirectives($this->html_with_empty_body);
+      $this->html_with_empty_body = Parser::initDOMDocument($this->html_with_empty_body);
+//      ddh($this->html_with_empty_body);
+//      $this->html_with_empty_body
+      $list = $this->html_with_empty_body->getElementsByTagName('body');
+      $el_to_replace = $list->item(0);
+
+      $el = $this->html_with_empty_body->createElement('body');
+//      $el = $parser->createElementFromHtml($html);
+      $el_to_replace->replaceWith($el);
+      $html = $this->html_with_empty_body->saveHTML();
+
+//      ddh($html);
+//      dd($el->item(0));
+      ddh($this->html);
+    }
+
+    return $this->html;
+  }
+
+  public function applyDirectives(string $html): string {
+    foreach($this->directives as $k => $v){
+      if($k == 'push'){
+        $stack = [];
+        foreach($v as $kk => $vv){
+          if(!array_key_exists($vv[2], $stack)){
+            $stack[$vv[2]] = [
+              "name" => $vv[2],
+              "content" => $vv[5],
+            ];
+          }else{
+            $stack[$vv[2]]['content'] .= $vv[5];
+          }
+        }
+
+        foreach($stack as $kk => $vv){
+          $pattern = "/@stack\((\'|\"){1}(([A-z])+)(\'|\"){1}\)/";
+          $html = preg_replace($pattern, $vv['content'], $html);
+        }
+      }
+    }
+
+    return $html;
   }
 
   public function makePathFromTagName(string $tag_name, string $prefix) : string
   {
     $str = ltrim($tag_name, $prefix);
     $str = str_replace('.', DIRECTORY_SEPARATOR, $str);
-    return VIEWS_PATH . $str . '.php';
+    return VIEW_PATH . $str . '.php';
   }
 
-  public function loadComponentFile(string $path, string $slot = null)
+  public function loadFile(string $path, string $slot = null)
   {
     if(!file_exists($path))
       dd($path);
@@ -51,7 +117,7 @@ class View{
 
       extract($params);
       ob_start();
-//      require($path);
+
       require(__DIR__ . DIRECTORY_SEPARATOR . 'temp.php');
       return ob_get_clean();
     };
@@ -59,210 +125,87 @@ class View{
     return $load($this->params);
   }
 
-  public function resolveContent()
+  public function appendDirectives(array $directives)
   {
-//    $file_content = file_get_contents($path);
-    $parser = new Parser('<div>' . $this->html . '</div>');
+    if(empty($directives))
+      return;
 
-    $nodes = $parser->getTopComponentsNodes();
-    foreach($nodes as $node){
-      $tag_name = $node->tagName;
-      $path = $this->makePathFromTagName($tag_name, $parser->getComponentPrefix());
-
-//      dd($path);
-
-      $html = $parser->saveHTML($node);
-
-//      dd($html);
-
-      $html = $this->loadComponentFile($path, $html);
-
-      $fragment = $parser->createDocumentFragment();
-      $fragment->appendXML($html);
-
-//      $dom = new DOMDocument();
-//      $dom->loadXML('<div>" . $html . "</div>");
-
-      $node->parentNode->replaceChild($fragment, $node);
-
-//      echo $html;
-//      die();
-
-//      $node->nodeValue = "<div>" . $html . "</div>";
-
-      $this->html = $parser->saveHTML();
-
-//      echo $html;
-//      die();
-
-//      $parser = new Parser('<div>' . $comp . '</div>');
-////      dd(11);
-//      $nodes = $parser->getTopComponentsNodes();
-//      dd($nodes);
-      $this->resolveContent();
-//      $comp = $this->loadComponent($path, $html);
-
-//      dd($comp);
-//
-//      dd($parser->saveHTML($path, $node));
-//      dd($path);
-//      dump($path);
+    foreach($directives as $k => $v){
+      if(array_key_exists($k, $this->directives) && is_array($this->directives[$k])){
+        $this->directives[$k] = array_merge($this->directives[$k], $v);
+      }else{
+        $this->directives[$k] = $v;
+      }
     }
   }
 
-  public function make() : string
+  public function resolveHtml()
   {
-    libxml_use_internal_errors(true);
-//    $this->html = file_get_contents($this->view_path);
-    $this->html = $this->loadComponentFile($this->view_path);
-    $this->resolveContent();
-//
-    return $this->html;
-//    die();
-//
 //    dd($this->html);
-//
-//    $file_content = file_get_contents($this->view_path);
-////    dd($file_content);
-//
-//    $parser = new Parser($file_content);
-//
-//    $nodes = $parser->getTopComponentsNodes();
-//
-//    dd($nodes);
-//
-//    foreach($nodes as $node){
-////      dd($node);
-//      $tag_name = $node->tagName;
-//      $path = $this->makePathFromTagName($tag_name, $parser->getComponentPrefix());
-//
-//      $html = $parser->saveHTML($node);
-//
-//      $comp = $this->loadComponentFile($path, $html);
-////      $comp = $this->loadComponent($path, $html);
-//
-//      dd($comp);
-//
-//      dd($parser->saveHTML($path, $node));
-//      dd($path);
-////      dump($path);
-//    }
-//
-//    dd($nodes);
-//
-////    dd($this->doc->saveHTML($node));
-//
-//    dd($parser->saveHTML($nodes[0]));
-//
-////    dd($nodes[0]->ownerDocument->saveHTML());
-////    foreach($nodes as $node){
-////      $node_name = $node->nodeName;
-////      dd($node_name);
-//////      $parser->isNodeHasParentTag();
-////    }
-//
-//    dd($nodes);
-//
-//    function get_tag( $tagname, $xml ) {
-//
-////      $attr = preg_quote($attr);
-////      $value = preg_quote($value);
-//
-//      $tag_regex = "/<{$tagname}>(.*?)<\\/{$tagname}>/si";
-//
-////      dd($tag_regex);
-//
-//      preg_match($tag_regex,
-//        $xml,
-//        $matches);
-//
-//      return $matches;
-//    }
-//
-//    $yourentirehtml = file_get_contents($this->view_path);
-////    $extract = get_tag('', $yourentirehtml);
-////    echo $extract;
-//
-//    $dom = new DOMDocument();
-//////    $dom->loadHTMLFile($this->view_path);    // or loadHTML($str)
-//    $dom->load($this->view_path);              // or loadXML($str)
-//    $root = $dom->documentElement;
-//    $xp = new \DOMXPath($dom);
-////
-//    $array = [];
-//    foreach ( $xp->query( "//*[starts-with(local-name(),'x-')][not(ancestor::*[starts-with(local-name(),'x-')])]" ) as $node ) {
-////      dd($node->tagName);
-//
-////      dd($node);
-////      array_push( $array, $dom->saveXML( $node ), "\n" );
-//      array_push( $array, $node);
-//    }
-//
-//    $nodeName = $array[0]->nodeName;
-//
-//    $markers = $root->getElementsByTagName($nodeName);
-//
-//    foreach($markers as $k => $v){
-//      dd($v->parentNode->parentNode->parentNode);
-//    }
-//
-//    dd($markers);
-//    dd($array);
-////
-//////    $dom->load($array[0]->nodeValue);
-//////    echo $array[0]->nodeValue;
-////////    echo $array[0]->saveXML();
-//////    die();
-////
-//////    $nodeName = $array[0]->nodeValue;
-////    $nodeName = $array[0];
-////
-//////    $dom->appendChild($array[0]);
-//////    $el = $dom->getElementById('my');
-//////    dump($el);
-//////    echo $dom->saveXML();
-//////    die();
-////
-////    echo dom_import_simplexml($nodeName);
-////    die();
-////
-////    dd($nodeName);
-////    dd($array);
-//
-//    $extract = get_tag($array[0]->nodeName, $yourentirehtml);
-//    dd($extract);
-//    die();
+    $parser = new Parser($this->html, $this->component_prefix);
+    if(preg_match('/^<html>[\s\S]*<\/html>$/', trim($this->html))){
+      $this->html_with_empty_body = $this->html;
+    }
 
-//
-////    $dd = $dom->getElementByTagName($nodeName);
-//
-//    dd($dd);
-//
-//    die();
-//
-////    $table = $dom->getElementById('mytable-id');    // DOMElement
-////    $lines = $dom->getElementsByTagName('x-layouts.layout');    // DOMNodeList
-////    $links = $dom->getElementsByTagName('a');
-//
-////    $xpath = new DOMXpath($dom);
-////    $tables = $xpath->query("//table[contains(@class,'mytables-class')]");
-//
-////    ob_start();
-////    include $this->view_path;
-////    $buffer = ob_get_clean();
-//
-////    echo $lines->saveHTML();;
-//
-//    dd(count($lines));
-//
-////    foreach($lines as $node){
-////      echo 1;
-////      echo $node->nodeValue;
-////    }
-//
-//    dd(11);
-//
-//    return $buffer;
+    if($res = $parser->isBodyNotValid()){
+      dd($res);
+    }
+
+//    $directives = $parser->getDirectives();
+//    $this->appendDirectives($directives);
+
+//    dd($this->directives);
+
+//    dump($this->html);
+
+    $nodes = $parser->getTopComponentsNodes();
+    foreach($nodes as $node){
+      $path = $this->makePathFromTagName($node->tagName, $parser->getComponentPrefix());
+
+      $html = $parser->saveHTML($node);
+//      ddh($html);
+
+//      $directives = $parser->getDirectives();
+//      $this->appendDirectives($directives);
+
+
+      $html = $this->loadFile($path, $html);
+
+      ["directives" => $directives, "html" => $html] = $parser->getDirectives($html);
+      $this->appendDirectives($directives);
+
+//      ddh($html);
+
+//      $directives = $parser->getDirectives();
+//      $this->appendDirectives($directives);
+
+//      $parser->getDirectives($html);
+//      ddh($html);
+
+      if(preg_match('/<html>[\s\S]*<\/html>/', $html)){
+        $this->html = $html;
+      }else{
+        $el = $parser->createElementFromHtml($html);
+        $node->replaceWith($el);
+        $this->html = $parser->saveHTML();
+      }
+
+//      dump($this->html);
+
+//      $directives = $parser->getDirectives();
+//      $this->appendDirectives($directives);
+
+      $this->resolveHtml();
+    }
   }
+
+//  public function make() : string
+//  {
+////    libxml_use_internal_errors(true);
+//    $this->html = $this->loadComponentFile($this->view_path);
+//    $this->resolveContent();
+//
+//    return $this->html;
+//  }
 
 }

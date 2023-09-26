@@ -57,7 +57,7 @@ class Arr{
 
   public function last(array $data, Closure $fn = null) : mixed
   {
-    $data = array_reverse($data);
+    $data = array_reverse($data, true);
     return $this->first($data, $fn);
   }
 
@@ -70,6 +70,13 @@ class Arr{
       if(array_key_exists($key, $data))
         unset($data[$key]);
 
+    return $data;
+  }
+
+  function map(array $data, Closure $fn) : array
+  {
+    foreach($data as $k => $v)
+      $data[$k] = $fn($v, $k);
     return $data;
   }
 
@@ -100,7 +107,7 @@ class Arr{
    * Groups the items by a given key
    * If callback passed as key it should return the value to group by
    */
-  public function groupBy(array $data, Closure|string|array $key) : array
+  public function groupBy(array $data, Closure|string|array $key, $preserveKeys = false) : array
   {
     if(!is_array($key))
       $key = [$key];
@@ -119,19 +126,14 @@ class Arr{
       return $itm;
     }, $key);
 
-//    dd($key);
-
     $grouped = [];
     foreach ($data as $k => $v) {
-//      dd($v);
       $curr = &$grouped;
       $i = 1;
       foreach ($key as $key_k => $key_v) {
         $res = $key_v($v, $k);
-//        dump($res);
         if(empty($res))
           break;
-
 
         if(!is_array($res))
           $res = [$res];
@@ -142,8 +144,13 @@ class Arr{
             $curr[$r] = [];
           }
 
-          if($i == count($key))
-            $curr[$r][] = $v;
+          if($i == count($key)){
+            if($preserveKeys){
+              $curr[$r][$k] = $v;
+            }else{
+              $curr[$r][] = $v;
+            }
+          }
 
           if($ii == count($res))
             $curr = &$curr[$r];
@@ -159,18 +166,6 @@ class Arr{
   }
 
   /*
-   * Flattens a multi-dimensional array by one level
-   * and maps it
-   * (in future may be work to map array at first and then flatten after)
-   */
-  public function flatMap(array $data, Closure $fn) : array
-  {
-    $flattend = $this->flatten($data, 1);
-    $mapped = array_map($fn, $flattend);
-    return $mapped;
-  }
-
-  /*
    * Flattens a multi-dimensional array into a single dimension
    */
   public function flatten(array $data, int $depth = null) : array
@@ -178,10 +173,12 @@ class Arr{
     $flatten = function(array $data, int $current_depth = 1) use ($depth, &$flatten) {
       $flattened = [];
       foreach($data as $k => $v){
-        if($current_depth <= $depth) {
+        if(is_null($depth) || $current_depth <= $depth) {
           if (is_array($v)) {
             $v = $flatten($v, $current_depth + 1);
             $flattened = array_merge($flattened, $v);
+          }else{
+            $flattened[] = $v;
           }
         }else{
           $flattened[] = $v;
@@ -191,14 +188,15 @@ class Arr{
       return $flattened;
     };
 
-    $flattened = $flatten($data);
-
-    return $flattened;
+    return $flatten($data);
   }
 
   /*
    * Returns the first element in the collection with the given key / value pair
    * works with two dimensional arrays
+   * also can be called with a comparison operator or
+   * called only with one argument
+   * (will return the first item where the given item key's value is "truthy")
    */
   public function firstWhere(array $data, string $key, string $operator = null, string $value = null) : mixed
   {
@@ -210,7 +208,7 @@ class Arr{
       $operator = null;
     }
 
-    foreach($data as $v){
+    foreach($data as $k => $v){
       if(!is_array($v) || !array_key_exists($key, $v))
         continue;
 
@@ -220,20 +218,20 @@ class Arr{
 
       if(!empty($value)){
         $res = match($operator) {
-          '>' => $value > $vv,
-          '<' => $value < $vv,
-          '<=' => $value <= $vv,
-          '>=' => $value >= $vv,
-          '!=' => $value != $vv,
-          '!==' => $value !== $vv,
-          '===' => $value === $vv,
-          '==' => $value == $vv,
-          default => $value == $vv,
+          '>' => $vv > $value,
+          '<' => $vv < $value,
+          '<=' => $vv <= $value,
+          '>=' => $vv >= $value,
+          '!=' => $vv != $value,
+          '!==' => $vv !== $value,
+          '===' => $vv === $value,
+          '==' => $vv == $value,
+//          default => $vv == $value,
         };
-        return $res ? $v : null;
-      }
 
-      return null;
+        if($res)
+          return $v;
+      }
     }
 
     return null;
@@ -244,7 +242,8 @@ class Arr{
     if(empty($data))
       return true;
 
-    $res = array_filter($data, $fn);
+    $res = $this->filter($data, $fn);
+//    $res = array_filter($data, $fn);
     return count($data) == count($res);
   }
 
@@ -277,7 +276,13 @@ class Arr{
 
   public function filter(array $data, Closure $fn) : array
   {
-    return array_filter($data, $fn);
+    $filtered = [];
+    foreach($data as $k => $v){
+      if($fn($v, $k))
+        $filtered[$k] = $v;
+    }
+
+    return $filtered;
   }
 
   public function reject(array $data, Closure $fn) : array
@@ -354,10 +359,15 @@ class Arr{
   {
     $dot_arr = [];
 
-    $go_through = function(array $data, string $key = '') use (&$go_through, &$dot_arr) {
+    $is_key = function($value){
+      return !empty($value) || is_numeric($value);
+    };
+
+    $go_through = function(array $data, string $key = '') use (&$go_through, &$dot_arr, &$is_key) {
       foreach($data as $k => $v){
-        $k = !empty($key) ? $key . "." . $k : $k;
-        if(is_array($v) && !empty($v)){
+        $k = $is_key($key) ? $key . "." . $k : $k . '';
+
+        if(is_array($v) && $is_key($v)){
           $go_through($v, $k);
           continue;
         }

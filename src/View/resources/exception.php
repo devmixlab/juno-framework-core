@@ -1,8 +1,8 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>[{{$code}}] {{$exception}}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
   </head>
@@ -11,17 +11,10 @@
 
         <strong class="text-danger">Thrown new Exception: </strong>
 
-      <div class="alert alert-danger show shadow-sm" role="alert">
-        <strong>[Code: {{$code}}] {{$exception}}: </strong>
-        <div>{{$message}}</div>
-      </div>
-
-<!--        <div class="card text-bg-secondary mb-3">-->
-<!--            <div class="card-header">Trace</div>-->
-<!--            <div class="card-body">-->
-<!--                <p class="card-text">{{$trace}}</p>-->
-<!--            </div>-->
-<!--        </div>-->
+          <div class="alert alert-danger show shadow-sm" role="alert">
+            <strong>[Code: {{$code}}] {{$exception}}: </strong>
+            <div>{{$message}}</div>
+          </div>
 
         <div class="card text-bg-light mb-3 shadow-sm">
             <div class="card-header"><strong>Trace:</strong></div>
@@ -29,22 +22,6 @@
                 <p class="card-text">{{$trace}}</p>
             </div>
         </div>
-
-<!--        <div class="card border-danger mb-3">-->
-<!--            <div class="card-header">Trace</div>-->
-<!--            <div class="card-body">-->
-<!--                <p class="card-text">{{$trace}}</p>-->
-<!--            </div>-->
-<!--        </div>-->
-
-<!--      <div class="card">-->
-<!--        <div class="card-header">-->
-<!--          Trace-->
-<!--        </div>-->
-<!--        <div class="card-body">-->
-<!--          <p class="card-text">{{$trace}}</p>-->
-<!--        </div>-->
-<!--      </div>-->
 
     </div>
 

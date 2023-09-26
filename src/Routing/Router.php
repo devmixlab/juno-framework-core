@@ -59,13 +59,6 @@ class Router extends MainRouter{
   {
     $route = $this->getRouteByName($route_name);
 
-//    throw new UrlGenerationException("Route parameter `fff` is required");
-
-//    throw new UrlGenerationException($route, ['id']);
-//    throw (new UrlGenerationException($route))->forMissingParameters($route);
-
-//    forMissingParameters(Route $route, array $parameters = [])
-
     if(empty($route))
       return null;
 
@@ -74,9 +67,6 @@ class Router extends MainRouter{
     $parts = $route->getParts();
     if(!empty($parts)){
       $uri_arr = [];
-//      $parts = $route->getParts();
-
-//      dd($parts);
 
       foreach($parts as $k => $part){
         $part_name = $part->getName();
@@ -100,8 +90,6 @@ class Router extends MainRouter{
       $uri .= implode("/", $uri_arr);
     }
 
-//    dd(3232);
-
     if(!empty($params)){
       $http_build_query = http_build_query($params);
       if(!empty($http_build_query))
@@ -109,7 +97,7 @@ class Router extends MainRouter{
     }
 
     if($absolute === true)
-      $uri = Request::getFullHost() . $uri;
+      $uri = Request::schemeHost() . $uri;
 
     return $uri;
   }

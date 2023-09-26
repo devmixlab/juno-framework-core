@@ -3,6 +3,11 @@ use Juno\Request\Request;
 use Juno\Response\Response;
 use Juno\View\View;
 
+if (! function_exists('route')) {
+  function route(string $route_name, array $params = [], bool $absolute = false){
+    return \Router::getUrlByRouteName($route_name, $params, $absolute);
+  }
+}
 
 if(!function_exists('abort')){
   function abort(int $code){
@@ -14,8 +19,11 @@ if(!function_exists('abort')){
 }
 
 if(!function_exists('view')){
+//  throw new \Juno\Exceptions\ViewException("Wrong content");
   function view(string $path, array $params = []){
-//    dd(111);
+//    dump(111);
+//    throw new \Juno\Exceptions\ViewException("Wrong content");
+//    return new View($path, $params);
     return \App::makeWith(View::class, [
       'path' => $path,
       'params' => $params,
@@ -49,6 +57,15 @@ if(!function_exists('response')){
 if(!function_exists('dd')){
   function dd(){
     pr(func_get_args());
+    die();
+  }
+}
+
+if(!function_exists('ddh')){
+  function ddh($html){
+    echo '<pre>';
+    echo htmlentities($html);
+    echo '</pre>';
     die();
   }
 }

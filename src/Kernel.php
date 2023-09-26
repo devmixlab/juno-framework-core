@@ -14,6 +14,7 @@ use PDOException;
 use BadMethodCallException;
 use Juno\Exceptions\Handler as ExceptionHandler;
 use Arr;
+use Juno\Exceptions\ViewException;
 
 class Kernel{
 
@@ -79,6 +80,10 @@ class Kernel{
     };
 
     try {
+//      dd(11);
+//      throw new ViewException("fsdfsdf");
+
+//      dd(11);
 //      set_error_handler($onError);
       register_shutdown_function($onShutdown);
 //      error_reporting(0);
@@ -94,6 +99,9 @@ class Kernel{
 //    catch (InvalidArgumentException $e) {
 //      echo 'InvalidArgumentException: ' . $e->getMessage();
 //    }
+//    catch (InvalidArgumentException $e) {
+//      echo 'InvalidArgumentException: ' . $e->getMessage();
+//    }
     catch (\ArgumentCountError|ErrorException|Exception|PDOException $e) {
       if($e instanceof PageNotFoundException)
         abort(404);
@@ -102,7 +110,7 @@ class Kernel{
 //      dd(434);
       $exception_handler = new ExceptionHandler($e);
 //      $exception_handler->();
-//      dd(11);
+//      dd(312312);
       response()
         ->textHtml($exception_handler->render())
         ->send((int)$e->getCode());

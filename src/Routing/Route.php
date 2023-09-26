@@ -87,7 +87,7 @@ class Route{
   {
     $params = $this->getParametersForFunc();
 
-    if(is_callable($this->action)){
+    if(is_callable($this->action) && empty($this->controller)){
       $params = $this->addDependenciesToParams(action: $this->action, params: $params);
       $result = call_user_func_array($this->action, $params ?? []);
     }else if(

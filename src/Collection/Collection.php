@@ -9,7 +9,9 @@ class Collection extends InitCollection {
   /*
    * LEFT TO IMPLEMENT:
    *
+   * diff, crossJoin, diffAssoc, diffAssocUsing, diffKeys,
    * flip, forPage, implode, intersect, intersectAssoc,
+   * duplicates, duplicatesStrict, eachSpread, firstOrFail,
    * intersectByKeys, mapSpread, mapToGroups, mapWithKeys,
    * max, median, merge, mergeRecursive, min, mode, nth, only,
    * pad, partition, percentage, pipe, pipeInto, pipeThrough,
@@ -34,9 +36,7 @@ class Collection extends InitCollection {
    */
   public function map(Closure $fn) : Collection
   {
-    $list = [];
-    foreach($this->list as $k => $v)
-      $list[$k] = $fn($v, $k);
+    $list = Arr::map($this->list, $fn);
     return new Collection($list);
   }
 
@@ -184,57 +184,93 @@ class Collection extends InitCollection {
     return count($this->list);
   }
 
+  /*
+   * Counts the occurrences of values in the collection
+   * By default counts the occurrences of every element
+   * Pass a closure to count all items by a custom value
+   */
   public function countBy(Closure|string $fn = null) : Collection
   {
     $counted = Arr::countBy($this->list, $fn);
     return new Collection($counted);
   }
 
+  /*
+   * Dumps the collection's items and ends execution of the script
+   */
   public function dd() : void
   {
     dd($this);
   }
 
+  /*
+   * Dumps the collection's items
+   */
   public function dump() : void
   {
     dump($this);
   }
 
+  /*
+   * Flattens a multi-dimensional collection into a single level collection
+   * that uses "dot" notation to indicate depth
+   */
   public function dot() : Collection
   {
     $dot_arr = Arr::toDot($this->list);
     return new Collection($dot_arr);
   }
 
+  /*
+   * Iterates over the items in the collection
+   * and passes each item to a closure
+   */
   public function each(Closure $fn) : void
   {
     Arr::each($this->list, $fn);
   }
 
-  public function ensure(string $type) : void
+  /*
+   * Verifies that all elements of a collection are of a given type
+   */
+  public function ensure(string $type) : bool
   {
-    $res = Arr::ensure($this->list, $type);
-    if(!$res)
-      dd('Wrong array by type');
+    return Arr::ensure($this->list, $type);
   }
 
+  /*
+   * Verifies that all elements of a collection
+   * pass a given truth test
+   */
   public function every(Closure $fn) : bool
   {
     return Arr::every($this->list, $fn);
   }
 
+  /*
+   * Returns all items in the collection
+   * except for those with the specified keys
+   */
   public function except(array|string $except) : Collection
   {
     $res = Arr::getExcept($this->list, $except);
     return new Collection($res);
   }
 
+  /*
+   * Returns only items in the collection
+   * with the specified keys
+   */
   public function only(array|string $only) : Collection
   {
     $res = Arr::getOnly($this->list, $only);
     return new Collection($res);
   }
 
+  /*
+   * filters the collection using the given callback,
+   * keeping only those items that pass a given truth test
+   */
   public function filter(Closure $fn = null) : Collection
   {
     if(is_null($fn))
@@ -246,11 +282,22 @@ class Collection extends InitCollection {
     return new Collection($res);
   }
 
+  /*
+   * returns the first element in the collection that passes a given truth test
+   * with no arguments will return just first element
+   */
   public function first(Closure $fn = null) : mixed
   {
     return Arr::first($this->list, $fn);
   }
 
+  /*
+   * Returns the first element in the collection with the given key / value pair
+   * works with two dimensional arrays
+   * also can be called with a comparison operator or
+   * called only with one argument
+   * (will return the first item where the given item key's value is "truthy")
+   */
   public function firstWhere(string $key, string $operator = null, string $value = null) : mixed
   {
     return Arr::firstWhere($this->list, $key, $operator, $value);
@@ -262,10 +309,17 @@ class Collection extends InitCollection {
     return new Collection($res);
   }
 
+  /*
+   * iterates through the collection and passes each value to the given closure.
+   * The closure is free to modify the item and return it,
+   * thus forming a new collection of modified items.
+   * Then, the array is flattened by one level
+   */
   public function flatMap(Closure $fn) : Collection
   {
-    $res = Arr::flatMap($this->list, $fn);
-    return new Collection($res);
+    $list = Arr::map($this->list, $fn);
+    $list = Arr::flatten($list, 1);
+    return new Collection($list);
   }
 
   /*
@@ -302,9 +356,9 @@ class Collection extends InitCollection {
    * Groups the items by a given key
    * If callback passed as key it should return the value to group by
    */
-  public function groupBy(Closure|string|array $key) : Collection
+  public function groupBy(Closure|string|array $key, $preserveKeys = false) : Collection
   {
-    $res = Arr::groupBy($this->list, $key);
+    $res = Arr::groupBy($this->list, $key, preserveKeys: $preserveKeys);
     return new Collection($res);
   }
 
@@ -407,13 +461,5 @@ class Collection extends InitCollection {
 
     return new Collection($list);
   }
-
-  /*
-   * Returns the maximum value of a given key
-   */
-//  public function max(string $key = null) : mixed
-//  {
-//    return Arr::max($this->list, $key);
-//  }
 
 }
