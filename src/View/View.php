@@ -38,19 +38,10 @@ class View extends InitView{
 //  }
 
   public function make(): string {
-    $this->html = $this->loadFile($this->view_path);
     $this->resolveHtml();
-
-//    ddh($this->html);
+    $this->applyLayout();
 
     $this->html = $this->directives->apply($this->html);
-
-//    $this->html = $this->applyDirectives($this->html);
-//    ddh($this->html);
-
-    $this->makeFullHtml();
-
-//    ddh($this->html);
 
     return $this->html;
   }

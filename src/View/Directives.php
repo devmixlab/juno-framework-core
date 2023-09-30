@@ -13,6 +13,7 @@ class Directives{
   public function __construct(protected InitView $view){}
 
   public function stack(string $html): string {
+    $html = HtmlHandler::removeHtmlComments($html);
     ["directives" => $directives, "html" => $html] = $this->getDirectives($html);
     $this->append($directives);
 
@@ -55,7 +56,9 @@ class Directives{
             $eval = preg_replace("/=&/", '=>', $eval);
             $eval = preg_replace("/gt;/", '', $eval);
             $include_params = eval($eval);
+//            dd($include_params);
             $params = array_merge($params, $include_params);
+//            dd($params);
           }
 
           $res_html = new View($vv[2], $params);

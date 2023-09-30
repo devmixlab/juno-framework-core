@@ -11,9 +11,9 @@ class InitView{
 
   protected string $html;
 
-  protected Directives $directives;
+  protected string $layout;
 
-  protected $html_outer_of_body;
+  protected Directives $directives;
 
   protected string $core_path = __DIR__ . DIRECTORY_SEPARATOR . 'resources' . DIRECTORY_SEPARATOR;
 
@@ -22,6 +22,10 @@ class InitView{
     $this->directives = new Directives($this);
     $path = str_replace(".",DIRECTORY_SEPARATOR, $dotted_path);
     $this->view_path = ($is_core ? $this->core_path : VIEW_PATH) . $path . '.php';
+
+    $html = $this->loadFile($this->view_path);
+//    $html = $this->directives->stack($html);
+    $this->html = $html;
   }
 
   public function params(): array {
@@ -33,49 +37,47 @@ class InitView{
     if(!file_exists($path))
       throw ViewException::forWrongPath($this->dotted_path);
 
-    return (static function ($params) use ($path, $slot) {
-      $data = file_get_contents($path);
+    $params = $this->params;
+    $data = file_get_contents($path);
+    $data = preg_replace('/\{\{(((?!\{\{|\}\})[\s\S])*)\}\}/i','<?= $1 ?>', $data);
+    file_put_contents(__DIR__ . DIRECTORY_SEPARATOR . 'temp.php', $data);
+
+    $html = (static function () use ($slot, $params) {
       extract($params);
-      unset($path, $params);
-
-      $data = preg_replace('/\{\{(((?!\{\{|\}\})[\s\S])*)\}\}/i','<?= $1 ?>', $data);
-
-      file_put_contents(__DIR__ . DIRECTORY_SEPARATOR . 'temp.php', $data);
+      unset($params);
 
       ob_start();
       require(__DIR__ . DIRECTORY_SEPARATOR . 'temp.php');
       return ob_get_clean();
-    })($this->params);
+    })();
+
+    $html = trim($html);
+
+    if(
+      preg_match('/^<html>[\s\S]*<\/html>$/', $html) &&
+      preg_match('/<body>([\s\S]*)<\/body>/', $html, $matches)
+    ) {
+      $this->layout = $html;
+      $this->layout = preg_replace('/<body>[\s\S]*<\/body>/', '<body></body>', $html);
+      $html = $matches[1];
+    }
+
+    $html = $this->directives->stack($html);
+
+    return trim($html);
   }
 
-  protected function makeFullHtml() {
-    if(!empty($this->html_outer_of_body)){
-//      $this->html_outer_of_body = $this->applyDirectives($this->html_outer_of_body);
-      $this->html_outer_of_body = $this->directives->apply($this->html_outer_of_body);
-      $this->html_outer_of_body = Parser::initDOMDocument($this->html_outer_of_body);
-//      ddh($this->html_with_empty_body);
-//      $this->html_with_empty_body
-      $list = $this->html_outer_of_body->getElementsByTagName('body');
-      $el_to_replace = $list->item(0);
+  protected function applyLayout(): void {
+    if(empty($this->layout))
+      return;
 
-      $el = $this->html_outer_of_body->createElement('body');
-
-      $html_dom = Parser::initDOMDocument($this->html);
-      $el->appendChild($this->html_outer_of_body->importNode($html_dom->documentElement, TRUE));
-
-      $el_to_replace->replaceWith($el);
-      $this->html = $this->html_outer_of_body->saveHTML();
-    }
+    $this->html = preg_replace('/<body>[\s\S]*<\/body>/', '<body>' . $this->html . '</body>', $this->layout);
   }
 
   protected function resolveHtml() {
-    if(preg_match('/^<html>[\s\S]*<\/html>$/', trim($this->html))){
-      $this->html_outer_of_body = $this->html;
-    }
-
     $html_handler = new HtmlHandler($this->html, $this->component_prefix);
 
-    if($res = $html_handler->isBodyNotValid()){
+    if($res = $html_handler->isNotValid()){
       dd($res);
     }
 
@@ -86,9 +88,7 @@ class InitView{
       $html = $html_handler->bodyNodeSaveHTML($node, true);
 
       $html = $this->loadFile($path, $html);
-      $html = trim($html);
-
-      $html = $this->directives->stack($html);
+//      $html = $this->directives->stack($html);
 
       if(!preg_match('/^<html>[\s\S]*<\/html>$/', $html)) {
         $el = $html_handler->createElementFromHtml($html);

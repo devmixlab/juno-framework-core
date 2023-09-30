@@ -7,9 +7,9 @@ use DOMElement;
 
 class HtmlHandler{
 
-  protected $body_content;
-  protected $body_dom;
-  protected $body_xp;
+  protected $dom;
+  protected $xp;
+  protected $html;
 
   static protected $singleton_tags = [
     "area","base","br","col","command","embed","hr","img","input","keygen",
@@ -17,45 +17,33 @@ class HtmlHandler{
   ];
 
   public function __construct(
-    protected string $html,
+    string $html,
     protected string $component_prefix,
-    bool $remove_comments_from_body_dom = true
+    bool $remove_comments = true
   )
   {
-    // Remove all comments
-    $html = preg_replace("/<!--((?!-->|<!--)[\s\S])*?-->/", "", $html);
+    $this->html = trim($html);
+    $this->dom = $this->initDOMDocument($html);
+    $this->xp = new DOMXPath($this->dom);
 
-    // Take only body
-    if(preg_match('/<body>[\s\S]*<\/body>/', $html, $matches)){
-      $html = $matches[0];
-      $html = preg_replace('/(<body>)|(<\/body>)/', '', $html);
-    }
-
-    $html = trim($html);
-
-    $this->body_content = $html;
-
-    // Set BODY_DOM
-    $this->body_dom = $this->initDOMDocument('<div>' . $html . '</div>');
-
-    $this->body_xp = new DOMXPath($this->body_dom);
-    if($remove_comments_from_body_dom){
+    if($remove_comments){
       // Remove comments from BODY_DOM
-      foreach ($this->body_xp->query('//comment()') as $comment) {
+      foreach ($this->xp->query('//comment()') as $comment) {
         $comment->parentNode->removeChild($comment);
       }
     }
   }
 
-  public function isBodyNotValid(): mixed {
-    return static::isHtmlNotValid($this->body_content);
+  public function isNotValid(): mixed {
+//    ddh($this->html);
+    return static::isHtmlNotValid($this->html);
   }
 
   public function getTopComponentsNodes(): array {
     $component_tags = [];
     $cp = $this->component_prefix;
 
-    foreach ( $this->body_xp->query( "//*[starts-with(local-name(),'{$cp}')][not(ancestor::*[starts-with(local-name(),'{$cp}')])]" ) as $node ) {
+    foreach ( $this->xp->query( "//*[starts-with(local-name(),'{$cp}')][not(ancestor::*[starts-with(local-name(),'{$cp}')])]" ) as $node ) {
       if(!in_array($node->tagName, $component_tags)){
         $component_tags[] = $node->tagName;
       }
@@ -63,7 +51,7 @@ class HtmlHandler{
 
     $nodes = [];
     foreach($component_tags as $tag){
-      $node_list = $this->body_dom->getElementsByTagName($tag);
+      $node_list = $this->dom->getElementsByTagName($tag);
       if($node_list->length > 0)
         foreach($node_list as $node){
           if(!$this->isNodeHasParentComponent($node))
@@ -76,9 +64,8 @@ class HtmlHandler{
 
   public function createElementFromHtml(string $html){
     $d = Parser::initDOMDocument($html);
-    $el = $this->body_dom->createElement('div');
-//    $this->dom->importNode($d->documentElement);
-    $el->appendChild($this->body_dom->importNode($d->documentElement, TRUE));
+    $el = $this->dom->createElement('div');
+    $el->appendChild($this->dom->importNode($d->documentElement, TRUE));
     return $el;
   }
 
@@ -100,13 +87,25 @@ class HtmlHandler{
     return false;
   }
 
+  static public function removeHtmlComments(string $html): string {
+    return preg_replace("/<!--((?!-->|<!--)[\s\S])*?-->/", "", $html);
+  }
+
   static public function isHtmlNotValid(string $html): mixed {
+    $html = static::removeHtmlComments($html);
+
+    // Take only body
+    if(preg_match('/<body>[\s\S]*<\/body>/', $html, $matches)){
+      $html = $matches[0];
+//      $html = preg_replace('/(<body>)|(<\/body>)/', '', $html);
+    }
+
+    $html = trim($html);
+
     libxml_clear_errors();
     simplexml_load_string('<div>' . $html . '</div>');
     $libxml_errors = libxml_get_errors();
     libxml_clear_errors();
-
-//    dd(111);
 
     if(count($libxml_errors) > 0){
       $err = $libxml_errors[0];
@@ -141,7 +140,7 @@ class HtmlHandler{
         array_map([$node->ownerDocument, "saveHTML"], iterator_to_array($node->childNodes))
       );
 
-    return !empty($node) ? $this->body_dom->saveHTML($node) : $this->body_dom->saveHTML();
+    return !empty($node) ? $this->dom->saveHTML($node) : $this->dom->saveHTML();
   }
 
 }
