@@ -70,8 +70,12 @@ class Directives{
       }
     }
 
-    $pattern = "/@stack\((\'|\"){1}([a-z0-9]*)(\'|\"){1}\)/";
+//    ddh($html);
+
+    $pattern = "/@stack\((\'|\"){1}([a-z0-9_-]*)(\'|\"){1}\)/";
     $html = preg_replace($pattern, '', $html);
+
+//    ddh($html);
 
     return $html;
   }
@@ -113,7 +117,10 @@ class Directives{
       }
     }
 
-//    dd($directives);
+//    $pattern = "/<((x-slot([A-z0-9\._-]*))( )*(\/)?)>/";
+//    $res = preg_match_all($pattern, $html, $matches, PREG_SET_ORDER);
+//    if(!empty($res))
+//      dd($matches);
 
     $res = preg_match_all($this->patterns['include'], $html, $matches, PREG_SET_ORDER);
 //    dd($matches);

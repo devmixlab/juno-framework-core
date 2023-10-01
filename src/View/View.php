@@ -39,9 +39,12 @@ class View extends InitView{
 
   public function make(): string {
     $this->resolveHtml();
-    $this->applyLayout();
+//    dd(11);
+//    $this->applyLayout();
 
     $this->html = $this->directives->apply($this->html);
+
+//    ddh($this->html);
 
     return $this->html;
   }

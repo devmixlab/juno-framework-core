@@ -2,6 +2,7 @@
 namespace Juno\View;
 
 use Juno\Exceptions\ViewException;
+use Juno\View\Parsers\SlotParser;
 
 class InitView{
 
@@ -32,7 +33,7 @@ class InitView{
     return $this->params;
   }
 
-  protected function loadFile(string $path, string $slot = null)
+  protected function loadFile(string $path, string $slot = null, array $slots = [])
   {
     if(!file_exists($path))
       throw ViewException::forWrongPath($this->dotted_path);
@@ -42,9 +43,10 @@ class InitView{
     $data = preg_replace('/\{\{(((?!\{\{|\}\})[\s\S])*)\}\}/i','<?= $1 ?>', $data);
     file_put_contents(__DIR__ . DIRECTORY_SEPARATOR . 'temp.php', $data);
 
-    $html = (static function () use ($slot, $params) {
+    $html = (static function () use ($slot, $params, $slots) {
       extract($params);
-      unset($params);
+      extract($slots);
+      unset($params, $slots);
 
       ob_start();
       require(__DIR__ . DIRECTORY_SEPARATOR . 'temp.php');
@@ -53,14 +55,14 @@ class InitView{
 
     $html = trim($html);
 
-    if(
-      preg_match('/^<html>[\s\S]*<\/html>$/', $html) &&
-      preg_match('/<body>([\s\S]*)<\/body>/', $html, $matches)
-    ) {
-      $this->layout = $html;
-      $this->layout = preg_replace('/<body>[\s\S]*<\/body>/', '<body></body>', $html);
-      $html = $matches[1];
-    }
+//    if(
+//      preg_match('/^<html>[\s\S]*<\/html>$/', $html) &&
+//      preg_match('/<body>([\s\S]*)<\/body>/', $html, $matches)
+//    ) {
+//      $this->layout = $html;
+//      $this->layout = preg_replace('/<body>[\s\S]*<\/body>/', '<body></body>', $html);
+//      $html = $matches[1];
+//    }
 
     $html = $this->directives->stack($html);
 
@@ -77,26 +79,35 @@ class InitView{
   protected function resolveHtml() {
     $html_handler = new HtmlHandler($this->html, $this->component_prefix);
 
-    if($res = $html_handler->isNotValid()){
-      dd($res);
-    }
+//    if($res = $html_handler->isNotValid()){
+//      dd($res);
+//    }
 
-    $nodes = $html_handler->getTopComponentsNodes();
-    foreach($nodes as $node){
-      $path = $this->makePathFromComponentTagName($node->tagName, $this->component_prefix);
+    $component_parser = new ComponentParser($this->html);
 
-      $html = $html_handler->bodyNodeSaveHTML($node, true);
+    $components = $component_parser->getComponents();
+    foreach($components as $component){
+      $path = $this->makePathFromComponentTagName($component["tag_name"], $this->component_prefix);
 
-      $html = $this->loadFile($path, $html);
-//      $html = $this->directives->stack($html);
-
-      if(!preg_match('/^<html>[\s\S]*<\/html>$/', $html)) {
-        $el = $html_handler->createElementFromHtml($html);
-        $node->replaceWith($el);
-        $html = $html_handler->bodyNodeSaveHTML();
+      $html = $component["content"] ?? '';
+      if(!empty($html)){
+        $slot_parser = new SlotParser($html);
+        $slots = $slot_parser->slotsNameValuePairs();
+        $html = $slot_parser->toHtml(function($itm){
+          return !empty($itm['type']) && $itm['type'] != 'slot';
+        });
       }
 
+//      ddh($component["content"]);
+//      dd($slots);
+
+      $loaded_html = $this->loadFile($path, $html, $slots ?? []);
+      $component_parser->setComponentFull($component["index"], $loaded_html);
+      $html = $component_parser->toHtml();
+
       $this->html = $html;
+
+//      ddh($this->html);
 
       $this->resolveHtml();
     }
