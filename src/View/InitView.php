@@ -33,20 +33,42 @@ class InitView{
     return $this->params;
   }
 
-  protected function loadFile(string $path, string $slot = null, array $slots = [])
+//  protected function loadFile(string $path, string $slot = null, array $slots = [], $component = null)
+  protected function loadFile(string $path, $component = null)
   {
     if(!file_exists($path))
       throw ViewException::forWrongPath($this->dotted_path);
 
     $params = $this->params;
     $data = file_get_contents($path);
+
+    if(!empty($component)){
+      $data = $component->parseProps($data);
+    }
+
     $data = preg_replace('/\{\{(((?!\{\{|\}\})[\s\S])*)\}\}/i','<?= $1 ?>', $data);
     file_put_contents(__DIR__ . DIRECTORY_SEPARATOR . 'temp.php', $data);
 
-    $html = (static function () use ($slot, $params, $slots) {
+//    dd($data);
+
+//    $html = (static function () use ($slot, $params, $slots, $component) {
+    $html = (static function () use ($params, $component) {
       extract($params);
-      extract($slots);
-      unset($params, $slots);
+      if(!empty($component)){
+        extract($component->slots());
+        $slot = $component->content();
+//        $props = $component->props();
+//        if(!empty($props))
+//          dd($props);
+//        $attributes = $component->attributes();
+//        if(!empty($attributes))
+//          dd(get_defined_vars());
+//          array_map(function($itm){
+//
+//          }, $attributes);
+//          dd($component->attributes());
+      }
+      unset($params);
 
       ob_start();
       require(__DIR__ . DIRECTORY_SEPARATOR . 'temp.php');
@@ -85,39 +107,43 @@ class InitView{
 
     $component_parser = new ComponentParser($this->html);
 
-    $components = $component_parser->getComponents();
-    foreach($components as $component){
-      $path = $this->makePathFromComponentTagName($component["tag_name"], $this->component_prefix);
+    $component_parts = $component_parser->getComponentParts();
+    foreach($component_parts as $component_part){
+      $path = $this->makePathFromComponentTagName($component_part["tag_name"]);
+      $component_class = $this->makeComponentClassFromComponentTagName($component_part["tag_name"]);
 
-      $html = $component["content"] ?? '';
-      if(!empty($html)){
-        $slot_parser = new SlotParser($html);
-        $slots = $slot_parser->slotsNameValuePairs();
-        $html = $slot_parser->toHtml(function($itm){
-          return !empty($itm['type']) && $itm['type'] != 'slot';
-        });
-      }
+      $component = class_exists($component_class) ?
+        new $component_class($component_part) : new Component($component_part);
 
-//      ddh($component["content"]);
-//      dd($slots);
-
-      $loaded_html = $this->loadFile($path, $html, $slots ?? []);
-      $component_parser->setComponentFull($component["index"], $loaded_html);
+      $loaded_html = $this->loadFile($path,$component ?? null);
+      $component_parser->setComponentPartFull($component_part["index"], $loaded_html);
       $html = $component_parser->toHtml();
 
       $this->html = $html;
-
 //      ddh($this->html);
 
       $this->resolveHtml();
     }
   }
 
-  protected function makePathFromComponentTagName(string $tag_name, string $prefix) : string
-  {
-    $str = ltrim($tag_name, $prefix);
+  protected function makePathFromComponentTagName(string $tag_name): string {
+    $str = ltrim($tag_name, $this->component_prefix);
     $str = str_replace('.', DIRECTORY_SEPARATOR, $str);
     return VIEW_PATH . $str . '.php';
+  }
+
+  protected function makeComponentClassFromComponentTagName(string $tag_name): string {
+    $class = "\\App\\View\\Components\\";
+    $str = ltrim($tag_name, $this->component_prefix);
+    $str_arr = explode('.', $str);
+    if(count($str_arr) > 1){
+      $str = array_pop($str_arr);
+      $class .= implode("\\", array_map(fn($itm) => ucfirst($itm), $str_arr)) . "\\";
+    }
+
+    $str = implode('', array_map(fn($itm) => ucfirst($itm), explode('_', $str)));
+    $class .= $str;
+    return $class;
   }
 
 }
