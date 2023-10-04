@@ -13,11 +13,11 @@
 </head>
 <body style="background-color: #e3ebf1;">
 
-<!--  <div class="px-3 py-3" style="max-width: 1100px; margin: auto;">-->
-<!---->
-<!--    -->
-<!---->
-<!--  </div>-->
+
+
+
+
+
   <div class="d-flex justify-content-center align-items-center flex-column" style="height: 100%;">
     <div class="fw-bold fs-1" style="color: #aac1d1;">404</div>
     <div class="" style="color: #aac1d1;">Page not found</div>

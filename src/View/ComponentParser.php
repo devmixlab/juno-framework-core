@@ -9,7 +9,9 @@ namespace Juno\View;
 
 class ComponentParser{
 
-  protected $open_tag = "/<((x-([A-z0-9\._-]*))((( ){1}(:)?([A-z]+)=((\"\w+\")|(\'\w+\')))*)( )*(\/)?)>/";
+//  protected $open_tag = "/<((x-([A-z0-9\._-]*))((( ){1}(:)?([A-z]+)=((\"\w+\")|(\'\w+\')))*)( )*(\/)?)>/";
+//  protected $open_tag = "/<((x-([A-z0-9\._-]*))((( ){1}(:)?([A-z]+)=((\"(([()A-z0-9_\-.,$! ]+)|({##((?!{##|##})[\s\S])+##}))\")|(\'(([A-z0-9_\-.,$! ]+)|({##((?!{##|##})[\s\S])+##}))\')))*)( )*(\/)?)>/";
+  protected $open_tag = "/(<(x-[A-z0-9\._-]*)(([ ]*[:]?[A-z0-9]+=(\"|\')(([()A-z0-9_\-.,$! '\"\n]+)|(({##)(((?!{##|##})[\s\S])+)(##})))\g5)+)[ ]*(\/)?>)/";
 
   protected $close_tag = "/<((x-([A-z0-9\._-]*))( )*(\/)?)>/";
 
@@ -33,6 +35,9 @@ class ComponentParser{
     $parse = function($html) use (&$parse) {
       $res = preg_match($this->open_tag, $html, $matches);
 
+//      ddh($html);
+//      dd($res);
+//      if()
 //      dd($matches);
 
       if($res == 0){
@@ -45,16 +50,19 @@ class ComponentParser{
         return;
       }
 
+//      ddh($matches[0]);
+//      dd($matches);
+
       $tag_name = $matches[2];
-      $open_tag = "<" . $matches[1] . ">";
-      $open_tag_attributes = !empty($matches[4]) ? trim($matches[4]) : null;
+      $open_tag = $matches[1];
+      $open_tag_attributes = !empty($matches[3]) ? trim($matches[3]) : null;
       $open_pos = strpos($html, $open_tag);
       $left_html = substr($html, $open_pos + strlen($open_tag));
 
 //      if($tag_name == 'x-test_text')
 //        dd($matches);
 
-      if(!empty($matches[12])){
+      if(!empty($matches[13])){
 //        dd($matches);
         $this->parts[] = [
           "index" => count($this->parts),

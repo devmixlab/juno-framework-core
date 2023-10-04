@@ -3,6 +3,7 @@ namespace Juno\View;
 
 use Juno\Exceptions\ViewException;
 use Juno\View\Parsers\SlotParser;
+use Juno\View\Parsers\DataAttributesParser;
 
 class InitView{
 
@@ -25,6 +26,7 @@ class InitView{
     $this->view_path = ($is_core ? $this->core_path : VIEW_PATH) . $path . '.php';
 
     $html = $this->loadFile($this->view_path);
+//    ddh($html);
 //    $html = $this->directives->stack($html);
     $this->html = $html;
   }
@@ -36,6 +38,8 @@ class InitView{
 //  protected function loadFile(string $path, string $slot = null, array $slots = [], $component = null)
   protected function loadFile(string $path, $component = null)
   {
+//    dd($component->content);
+
     if(!file_exists($path))
       throw ViewException::forWrongPath($this->dotted_path);
 
@@ -43,13 +47,28 @@ class InitView{
     $data = file_get_contents($path);
 
     if(!empty($component)){
+//      dd(123123);
+//      ddh($data);
+    }
+
+    $data_attributes_parser = new DataAttributesParser($data);
+    $data_attributes_parser->proccessDataAttributes();
+    $data = $data_attributes_parser->toHtml();
+
+
+//    ddh($data);
+
+    if(!empty($component)){
+//      ddh($data);
       $data = $component->parseProps($data);
+//      dd(11);
+//      ddh($data);
     }
 
     $data = preg_replace('/\{\{(((?!\{\{|\}\})[\s\S])*)\}\}/i','<?= $1 ?>', $data);
     file_put_contents(__DIR__ . DIRECTORY_SEPARATOR . 'temp.php', $data);
 
-//    dd($data);
+//    ddh($data);
 
 //    $html = (static function () use ($slot, $params, $slots, $component) {
     $html = (static function () use ($params, $component) {
@@ -57,7 +76,10 @@ class InitView{
       if(!empty($component)){
         extract($component->slots());
         $slot = $component->content();
-//        $props = $component->props();
+        $props = $component->props();
+        extract($props);
+//        dd($props);
+
 //        if(!empty($props))
 //          dd($props);
 //        $attributes = $component->attributes();
@@ -68,14 +90,24 @@ class InitView{
 //          }, $attributes);
 //          dd($component->attributes());
       }
-      unset($params);
+      unset($params, $props);
 
       ob_start();
       require(__DIR__ . DIRECTORY_SEPARATOR . 'temp.php');
       return ob_get_clean();
     })();
 
+//    $data_attributes_parser = new DataAttributesParser($html);
+//    if(!empty($component) && $component->tagName() == 'x-test_text'){
+////      dd($component->tagName());
+//      ddh($html);
+//    }
+
+//    ddh($html);
+
     $html = trim($html);
+
+//    ddh($html);
 
 //    if(
 //      preg_match('/^<html>[\s\S]*<\/html>$/', $html) &&
@@ -88,32 +120,46 @@ class InitView{
 
     $html = $this->directives->stack($html);
 
+//    ddh($html);
+
     return trim($html);
   }
 
-  protected function applyLayout(): void {
-    if(empty($this->layout))
-      return;
+//  protected function applyLayout(): void {
+//    if(empty($this->layout))
+//      return;
+//
+//    $this->html = preg_replace('/<body>[\s\S]*<\/body>/', '<body>' . $this->html . '</body>', $this->layout);
+//  }
 
-    $this->html = preg_replace('/<body>[\s\S]*<\/body>/', '<body>' . $this->html . '</body>', $this->layout);
-  }
-
-  protected function resolveHtml() {
+  protected function resolveHtml($iii = 1) {
     $html_handler = new HtmlHandler($this->html, $this->component_prefix);
 
 //    if($res = $html_handler->isNotValid()){
 //      dd($res);
 //    }
 
+//    dd(11);
     $component_parser = new ComponentParser($this->html);
 
     $component_parts = $component_parser->getComponentParts();
+//    if($iii == 2){
+//      dd($component_parser->parts());
+//      ddh($this->html);
+//    }
     foreach($component_parts as $component_part){
       $path = $this->makePathFromComponentTagName($component_part["tag_name"]);
       $component_class = $this->makeComponentClassFromComponentTagName($component_part["tag_name"]);
 
+//      if(class_exists($component_class))
+//        dd($component_part['attributes']);
+
+//      dd(11);
       $component = class_exists($component_class) ?
         new $component_class($component_part) : new Component($component_part);
+
+//      if(class_exists($component_class))
+//        dd(1212);
 
       $loaded_html = $this->loadFile($path,$component ?? null);
       $component_parser->setComponentPartFull($component_part["index"], $loaded_html);
@@ -122,7 +168,7 @@ class InitView{
       $this->html = $html;
 //      ddh($this->html);
 
-      $this->resolveHtml();
+      $this->resolveHtml(++$iii);
     }
   }
 
