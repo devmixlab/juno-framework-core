@@ -143,7 +143,7 @@ class InitView{
     $component_parser = new ComponentParser($this->html);
 
     $component_parts = $component_parser->getComponentParts();
-//    if($iii == 2){
+//    if($iii == 1){
 //      dd($component_parser->parts());
 //      ddh($this->html);
 //    }
@@ -162,6 +162,12 @@ class InitView{
 //        dd(1212);
 
       $loaded_html = $this->loadFile($path,$component ?? null);
+
+//      if($iii == 1){
+////      dd($component_parser->parts());
+//        ddh($loaded_html);
+//      }
+
       $component_parser->setComponentPartFull($component_part["index"], $loaded_html);
       $html = $component_parser->toHtml();
 
