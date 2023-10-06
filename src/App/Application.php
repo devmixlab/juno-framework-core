@@ -46,8 +46,7 @@ class Application extends Container{
 
   protected function setConfig() : void
   {
-//    $this->config['app'] = require(CONFIG_PATH . 'app.php');;
-//    dd($this->config);
+    $this->config['app'] = require(CONFIG_PATH . 'app.php');
   }
 
   protected function registerServiceProviders() : void
@@ -64,9 +63,9 @@ class Application extends Container{
       $serviceProvider->boot();
   }
 
-  public function config(str $search_pattern) : array|string
-  {
-//    return \Arr::getByDotPattern();
+  public function config(string $name, $value_on_empty = null): mixed {
+//    dd($this->config);
+    return \Arr::getByDotPattern($this->config, $name, $value_on_empty);
   }
 
   public function bind(string $key, $value) : void

@@ -82,4 +82,16 @@ class Manager{
     return $this->conn->lastInsertId();
   }
 
+//  protected function modifyResult($data) {
+//
+//  }
+
+//  public function __call (string $name , array $arguments): mixed {
+//    if(in_array($name, ['querySingle','fetchSingle'])){
+//      $res = call_user_func_array([$this, $name], $arguments);
+//      if()
+//      return $res;
+//    }
+//  }
+
 }

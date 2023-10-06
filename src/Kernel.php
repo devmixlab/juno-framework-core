@@ -51,9 +51,28 @@ class Kernel{
     return array_merge(static::$app_service_providers, static::$service_providers);
   }
 
-  public function webMiddleware() : array
-  {
-    return Arr::getByDotPattern($this->middleware_groups, 'web', []);
+//  public function webMiddleware() : array
+//  {
+//    return Arr::getByDotPattern($this->middleware_groups, 'web', []);
+//  }
+
+  public function middleware(array $app_middleware_list = []): array {
+    $out = !empty($this->middleware_groups) ?
+      Arr::getByDotPattern($this->middleware_groups, 'web', []) : [];
+
+//    dd(static::$app_middleware);
+    if(!empty($app_middleware_list) && !empty(static::$app_middleware)){
+      foreach($app_middleware_list as $key){
+//        dd(11);
+        if(!empty(static::$app_middleware[$key]))
+//          dd(static::$app_middleware[$key]);
+          $out[] = static::$app_middleware[$key];
+      }
+    }
+
+    return $out;
+//    $app = !empty($this->app_middleware) ?
+//      $this->app_middleware, 'web', []) : [];
   }
 
   public function run() : void

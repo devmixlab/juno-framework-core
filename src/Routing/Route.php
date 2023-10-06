@@ -66,7 +66,8 @@ class Route{
     \Router::setCurrentRoute($this);
     $request = \App::make(Request::class);
     $kernel = \App::make(Kernel::class);
-    $middleware_classes = $kernel->webMiddleware();
+//    $middleware_classes = $kernel->webMiddleware();
+    $middleware_classes = $kernel->middleware($this->middleware);
 
     $next = function(Request $request) use (&$middleware_classes, &$next) {
       if(empty($middleware_classes))
@@ -74,7 +75,7 @@ class Route{
 
       $class = array_shift($middleware_classes);
       if(!class_exists($class))
-        dd(1111);
+        dd('Class `' . $class . '` not exists.');
 
       $middleware = new $class();
       return $middleware->handle($request, $next);

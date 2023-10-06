@@ -8,6 +8,7 @@ use App\Kernel;
 use Juno\Validating\Rules\Rule;
 use Arr;
 use Juno\Facades\Csrf;
+use Juno\Collection\Collection;
 
 class Validator extends InitValidator{
 
@@ -20,14 +21,12 @@ class Validator extends InitValidator{
 
 //  protected array $reserved_rules = ['nullable','bail'];
 
-  public function data() : array
-  {
-    return $this->data;
+  public function data($collect = false): array|Collection {
+    return $collect ? collect($this->data) : $this->data;
   }
 
-  public function validated() : array
-  {
-    return $this->validated;
+  public function validated($collect = false): array|Collection {
+    return $collect ? collect($this->validated) : $this->validated;
   }
 
   public function errors() : array
@@ -44,7 +43,9 @@ class Validator extends InitValidator{
   {
 //    dump(Csrf::get());
 //    dd($data["__csrf"]);
-    if(empty($data["__csrf"]) || !is_string($data["__csrf"]) || !Csrf::validate($data["__csrf"])){
+    if(empty($data["__csrf"]) || !is_string($data["__csrf"])
+//      || !Csrf::validate($data["__csrf"])
+    ){
       dd('Csrf is expired!');
     }
 

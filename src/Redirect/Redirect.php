@@ -36,16 +36,17 @@ class Redirect{
   }
 
   public function back(Validator $validator = null): self {
-    if(!empty($validator) && !$validator->valid()){
-      $this->withErrors($validator->errors())
-        ->withInput($validator->data());
+    if(!empty($validator)){
+      $this->withInput($validator->data());
+      if(!$validator->valid())
+        $this->withErrors($validator->errors());
     }
 
     $this->to_url = Url::previous();
     return $this;
   }
 
-  public function toUrl(string $url): self {
+  public function url(string $url): self {
     $this->to_url = $url;
     return $this;
 //    return response()->header('Location', $url);
@@ -63,17 +64,10 @@ class Redirect{
   //     die();
   // }
 
-  /**
-   *   Sets url to redirect to by name of route and passed parameters
-   *
-   *   @param string $name - route name
-   *   @param array $params - params for route
-   *   @return self
-   */
-//  public function route(string $name, array $params = []) : self {
-//    $this->url_to = route($name, $params, true);
-//    return $this;
-//  }
+  public function route(string $name, array $params = []): self {
+    $this->to_url = route($name, $params, true);
+    return $this;
+  }
 
 //  public function url(string $url): self {
 //    $this->url_to = $url;
@@ -99,6 +93,11 @@ class Redirect{
 
   public function withErrors(array $data): self {
     $this->with = Arr::setByDotPattern($this->with, 'errors', $data);
+    return $this;
+  }
+
+  public function withMessage(string $data): self {
+    $this->with = Arr::setByDotPattern($this->with, 'message', $data);
     return $this;
   }
 

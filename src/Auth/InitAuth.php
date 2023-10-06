@@ -3,17 +3,25 @@ namespace Juno\Auth;
 
 class InitAuth {
 
-  protected $guards;
+  protected $providers;
 
   function __construct() {
-//    $this->guards = \App::config("auth.guards");
+//    $this->providers_conf = \App::config("auth.providers");
 //    $this->token_expiration_interval = \App::config("security.token_expiration_interval");
 //
 //    $this->setInitialAuthorizedByGuard();
   }
 
-  static public function hash(string $data): string {
-    return password_hash($data, PASSWORD_BCRYPT);
+  public function provider(string $name): null|Provider {
+    if(empty($this->providers[$name])){
+      $config = \App::config("app.auth.providers." . $name);
+      if(!$config)
+        return null;
+
+      $this->providers[$name] = new Provider($config);
+    }
+
+    return $this->providers[$name];
   }
 
 }

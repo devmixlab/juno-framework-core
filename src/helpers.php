@@ -10,6 +10,13 @@ use Juno\Sessions\Contracts\GlobalSession;
 use Juno\Sessions\Contracts\AuthSession;
 use Juno\Sessions\Contracts\FlashSessionContract;
 use Juno\Sessions\Contracts\AppSession;
+use Juno\Collection\Collection;
+
+if (! function_exists('collect')) {
+  function collect(array $data){
+    return new Collection($data);
+  }
+}
 
 if (! function_exists('old')) {
   function old(string $dotted_name, $value_on_empty = null){

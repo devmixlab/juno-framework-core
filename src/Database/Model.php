@@ -46,12 +46,24 @@ class Model{
     return $this->table;
   }
 
+  public function toArray(): array {
+    $vars = $this->getObjPublicVars();
+    if(!empty($this->hidden) && is_array($this->hidden)){
+      foreach($this->hidden as $hidden){
+        if(array_key_exists($hidden, $vars))
+          unset($vars[$hidden]);
+      }
+    }
+
+    return $vars;
+  }
+
   public static function __callStatic(string $method, array $args)
   {
     if(method_exists(static::class, $method)){
       return call_user_func_array([(new static()), $method], $args);
     }else if(method_exists(QueryBuilder::class, $method)){
-      $instance = new QueryBuilder((new static())->getTable());
+      $instance = new QueryBuilder((new static())->getTable(), static::class);
       return call_user_func_array([$instance, $method], $args);
     }
   }
