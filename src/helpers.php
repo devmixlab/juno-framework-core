@@ -2,10 +2,62 @@
 use Juno\Request\Request;
 use Juno\Response\Response;
 use Juno\View\View;
+use Juno\Redirect\Redirect;
+
+use Juno\Sessions\Session;
+use Juno\Sessions\FlashSession;
+use Juno\Sessions\Contracts\GlobalSession;
+use Juno\Sessions\Contracts\AuthSession;
+use Juno\Sessions\Contracts\FlashSessionContract;
+use Juno\Sessions\Contracts\AppSession;
+
+if (! function_exists('old')) {
+  function old(string $dotted_name, $value_on_empty = null){
+    $dotted_name = 'input.' . $dotted_name;
+    return flash_session()->exists($dotted_name) ?
+      flash_session()->get($dotted_name) : $value_on_empty;
+  }
+}
+
+if (! function_exists('global_session')) {
+  function global_session(){
+    return \App::make(GlobalSession::class);
+  }
+}
+
+if (! function_exists('auth_session')) {
+  function auth_session(){
+    return \App::make(AuthSession::class);
+  }
+}
+
+if (! function_exists('flash_session')) {
+  function flash_session(){
+    return \App::make(FlashSessionContract::class);
+  }
+}
+
+if (! function_exists('app_session')) {
+  function app_session(){
+    return \App::make(AppSession::class);
+  }
+}
+
+if (! function_exists('redirect')) {
+  function redirect(){
+    return \App::make(Redirect::class);
+  }
+}
 
 if (! function_exists('route')) {
   function route(string $route_name, array $params = [], bool $absolute = false){
     return \Router::getUrlByRouteName($route_name, $params, $absolute);
+  }
+}
+
+if (! function_exists('is_current_route')) {
+  function is_current_route(string $route_name){
+    return $route_name == \Router::getCurrentRouteName();
   }
 }
 

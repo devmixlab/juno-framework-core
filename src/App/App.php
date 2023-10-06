@@ -6,11 +6,20 @@ namespace Juno\App;
 //use Core\App\App;
 class App extends Container{
 
-//  public function test() : void
-//  {
+  protected string $csrf;
+
+//  public function __construct(){
+//    parent::__construct();
+//
+//    $this->makeCsrf();
+//  }
+
+  public function makeCsrf() : void
+  {
+    dd(uniqid(mt_rand(), true));
 //    echo 'App::test';
 //    die();
-//  }
+  }
 //
 //  public function dispatchRouter() : void
 //  {

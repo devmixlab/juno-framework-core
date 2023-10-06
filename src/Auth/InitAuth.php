@@ -12,4 +12,8 @@ class InitAuth {
 //    $this->setInitialAuthorizedByGuard();
   }
 
+  static public function hash(string $data): string {
+    return password_hash($data, PASSWORD_BCRYPT);
+  }
+
 }

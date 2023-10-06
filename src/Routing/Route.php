@@ -7,6 +7,7 @@ use Juno\Exceptions\BadRouterException;
 use Juno\Routing\Enums\PartsTypes;
 use Juno\Routing\Enums\CallerTypes;
 use Juno\Response\Response;
+use Juno\Redirect\Redirect;
 use Juno\View\View;
 use Juno\Request\Request;
 use App\Kernel;
@@ -116,6 +117,9 @@ class Route{
         ->json($result);
     }else if($result instanceof Response){
       return $result;
+    }else if($result instanceof Redirect){
+//      dd(111);
+      return $result->makeResponse();
     }else if($result instanceof View){
       return response()
         ->textHtml($result->make());
@@ -210,7 +214,7 @@ class Route{
     return $this;
   }
 
-  public function getName() : ?string {
+  public function getName(): ?string {
     return $this->name;
   }
 

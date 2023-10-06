@@ -99,6 +99,11 @@ class Session extends InitSession {
       $this->push($name, ($value - $decrement_by));
   }
 
+  public function isEmpty(): bool {
+    $arr = Arr::hasByDotPattern($this->global_sessions, $this->makePrefixedName());
+    return empty($arr);
+  }
+
   public function has(string $name) : bool
   {
     if(empty($name))

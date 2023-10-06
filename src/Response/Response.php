@@ -1,6 +1,8 @@
 <?php
 namespace Juno\Response;
 
+use Juno\Facades\FlashSession;
+
 class Response {
 
   protected array $headers = [];
@@ -9,8 +11,26 @@ class Response {
 
   protected int $code = 200;
 
-  public function setHeader(array|string $name, string $value = null) : self
-  {
+  protected array $with = [];
+
+//  public function back(): self {
+//    dd($_SERVER["HTTP_REFERER"]);
+//    return $this;
+//  }
+
+  public function with($key, $value = null): self {
+    if(!is_string($key) && !is_array($key))
+      return $this;
+
+    if(is_string($key))
+      $key = [$key => $value];
+
+    $this->with = $key;
+//    $this->with = array_merge($this->with, $key);
+    return $this;
+  }
+
+  public function setHeader(array|string $name, string $value = null): self {
     return $this->header($name, $value);
   }
 
@@ -72,19 +92,26 @@ class Response {
     return $this;
   }
 
-  public function send(int $code = null) : void
-  {
+  public function send(int $code = null): void {
+    if(!empty($this->with))
+      FlashSession::put($this->with);
+
     if(!empty($this->headers)){
       foreach($this->headers as $k => $v){
         header($k . ': ' . $v);
       }
     }
 
-//    dd($code);
+    if(empty($this->content))
+      exit;
+
+//    dd($this->headers);
 
     http_response_code($code ?? $this->code);
 
-    echo $this->content;
+    if(!empty($this->content))
+      echo $this->content;
+
     exit;
   }
 

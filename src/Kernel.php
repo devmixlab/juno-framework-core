@@ -27,8 +27,12 @@ class Kernel{
   static protected $validation_rules = [
     'required' => \Juno\Validating\Rules\Required::class,
     'string' => \Juno\Validating\Rules\Str::class,
+    'numeric' => \Juno\Validating\Rules\Numeric::class,
+    'integer' => \Juno\Validating\Rules\Integer::class,
     'email' => \Juno\Validating\Rules\Email::class,
     'array' => \Juno\Validating\Rules\Arr::class,
+    'same' => \Juno\Validating\Rules\Same::class,
+    'in' => \Juno\Validating\Rules\In::class,
   ];
 
   static public function getValidationRules(string $name = null) : string|array|null

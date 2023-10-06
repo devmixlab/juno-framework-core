@@ -15,6 +15,7 @@ class Application extends Container{
 
   public function __construct()
   {
+//    $this->makeCsrf();
 //    $this->kernel = new Kernel();
 
 //    dd($this->kernel->getServiceProviders());
@@ -27,6 +28,15 @@ class Application extends Container{
 
     $this->setConfig();
 //    unset(＄GLOBALS['app_config']);
+  }
+
+  public function makeCsrf() : void
+  {
+//    $res = md5(uniqid(mt_rand(), true));
+    $res = \Hash::make(uniqid(mt_rand(), true));
+    dd($res);
+//    echo 'App::test';
+//    die();
   }
 
 //  protected function setKernel() : void

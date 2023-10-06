@@ -7,6 +7,7 @@ use Juno\Request\Request;
 use App\Kernel;
 use Juno\Validating\Rules\Rule;
 use Arr;
+use Juno\Facades\Csrf;
 
 class Validator extends InitValidator{
 
@@ -15,8 +16,19 @@ class Validator extends InitValidator{
   protected array $messages = [];
 
   protected array $errors = [];
+  protected array $validated = [];
 
 //  protected array $reserved_rules = ['nullable','bail'];
+
+  public function data() : array
+  {
+    return $this->data;
+  }
+
+  public function validated() : array
+  {
+    return $this->validated;
+  }
 
   public function errors() : array
   {
@@ -30,6 +42,12 @@ class Validator extends InitValidator{
 
   public function make(array $data, array $rules, array $messages = []) : self
   {
+//    dump(Csrf::get());
+//    dd($data["__csrf"]);
+    if(empty($data["__csrf"]) || !is_string($data["__csrf"]) || !Csrf::validate($data["__csrf"])){
+      dd('Csrf is expired!');
+    }
+
     if(empty($rules))
       return $this;
 
@@ -57,6 +75,7 @@ class Validator extends InitValidator{
       $settings->setHasError();
     };
 
+    $validated = [];
     foreach($this->rules as $name => $list){
       $attribute = $name;
       $value = \Arr::getByDotPattern($this->data, $name);
@@ -67,7 +86,11 @@ class Validator extends InitValidator{
           $v->setData($this->data)->setSettings($settings);
           $v($attribute, $value, $fail);
         }
+
+      $validated[$name] = $value;
     }
+
+    $this->validated = $validated;
 
     return $this;
 

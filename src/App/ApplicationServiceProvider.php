@@ -9,6 +9,7 @@ use App\Kernel;
 //use Juno\Kernel as MainKernel;
 use Juno\Helpers\Arr\Arr;
 use Juno\Helpers\Str as StrHelper;
+use Juno\Helpers\Url;
 //use Juno\Dotenv\Dotenv;
 use Juno\Database\Manager;
 use Juno\Database\Connection as PDOConnection;
@@ -22,6 +23,11 @@ use Juno\Sessions\Contracts\FlashSessionContract;
 use Juno\Sessions\Contracts\AppSession;
 use Juno\Validating\Validator;
 use Juno\Cookie\Cookie;
+use Juno\Redirect\Redirect;
+
+use Juno\Validating\Errors;
+use Juno\Auth\Auth;
+use Juno\Validating\Csrf;
 
 class ApplicationServiceProvider extends ServiceProvider implements ServiceProviderContract{
 
@@ -35,7 +41,11 @@ class ApplicationServiceProvider extends ServiceProvider implements ServiceProvi
     $this->app->singleton(Kernel::class, fn() => new Kernel());
     $this->app->singleton(Request::class, fn() => new Request());
     $this->app->singleton(Arr::class, fn() => new Arr());
+    $this->app->singleton(Url::class, fn() => new Url());
     $this->app->singleton(StrHelper::class, fn() => new StrHelper());
+    $this->app->singleton(Redirect::class, fn() => new Redirect());
+    $this->app->singleton(Auth::class, fn() => new Auth());
+    $this->app->singleton(Csrf::class, fn() => new Csrf());
 
     //Sessions
     $this->app->singleton(GlobalSession::class, fn() => new Session());
@@ -61,6 +71,9 @@ class ApplicationServiceProvider extends ServiceProvider implements ServiceProvi
   public function boot() : void
   {
 //    \App::make(Manager::class);
+//    \App::makeCsrf();
+//    $res = \Hash::make(uniqid(mt_rand(), true));
+//    dd($res);
 
     \App::makeWith(Manager::class, [
       'conn' => new PDOConnection(
@@ -73,6 +86,14 @@ class ApplicationServiceProvider extends ServiceProvider implements ServiceProvi
         collation: 'utf8_general_ci'
       )
     ]);
+
+    View::composer('errors', function () {
+      $errors = !flash_session()->isEmpty() && flash_session()->has('errors') ?
+        flash_session()->get('errors') : [];
+      return new Errors($errors);
+    });
+
+
   }
 
 }

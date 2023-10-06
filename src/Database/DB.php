@@ -38,15 +38,22 @@ class DB{
 
     $pdo_args = new PDOArgs();
     $values_arr = [];
+//    dd($data);
     foreach($data as $v){
+//      dd($v);
       $values_arr[] = "(" . implode(', ', array_map(function($itm) use (&$pdo_args, $v) {
-        if(!$this->isTypeRight($v[$itm]))
-          throw new InvalidArgumentException();
+//        dd($this->isTypeRight($v[$itm]));
+//        if(!$this->isTypeRight($v[$itm]))
+//          throw new InvalidArgumentException();
+
+//        dd($itm);
 
         $pdo_arg = $pdo_args->add($itm, $v[$itm]);
         return ":{$pdo_arg}";
       }, $keys)) . ")";
     }
+
+//    dd($data);
 
     $values_str = implode(',', $values_arr);
     $sql = "INSERT INTO `{$this->table}` ({$keys_str}) VALUES {$values_str};";
