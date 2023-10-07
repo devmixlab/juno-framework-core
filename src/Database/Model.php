@@ -29,7 +29,7 @@ class Model{
 
   protected function all(){
     $res = DB::table($this->table)->get();
-    return $this->modQueryBuilderResult($res, 'collection');
+    return static::modQueryBuilderResult($res, 'collection');
   }
 
   protected function update(array $data)
@@ -40,7 +40,7 @@ class Model{
   protected function find(int $id)
   {
     $res = DB::table($this->table)->where('id', $id)->first();
-    return $this->modQueryBuilderResult($res, 'model');
+    return static::modQueryBuilderResult($res, 'model');
   }
 
   public function getTable() : string
@@ -60,7 +60,7 @@ class Model{
     return $vars;
   }
 
-  protected function modQueryBuilderResult($result, string $type){
+  static protected function modQueryBuilderResult($result, string $type){
     if(is_array($result)){
       if($type == 'model'){
         return new static($result);
@@ -78,7 +78,7 @@ class Model{
       return call_user_func_array([(new static()), $method], $args);
     }else if(method_exists(QueryBuilder::class, $method)){
       $instance = new QueryBuilder((new static())->getTable(), function($result, string $type) {
-        return $this->modQueryBuilderResult($result, $type);
+        return static::modQueryBuilderResult($result, $type);
       });
 
       return call_user_func_array([$instance, $method], $args);

@@ -213,7 +213,8 @@ class Builder {
   }
 
   protected function modResult($result, string $type) {
-    return !empty($this->mod_result) ? ($this->mod_result)($result, $type) : $result;
+    return !empty($this->mod_result) ?
+      ($this->mod_result)($result, $type) : $result;
   }
 
   protected function makeUpdateSql(array $data) : string
