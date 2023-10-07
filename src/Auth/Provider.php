@@ -18,7 +18,6 @@ class Provider {
 
 //    dd(auth_session()->get('providers.usrs.user'));
     $user = auth_session()->get('providers.' . $this->name . '.user');
-//    dd($user);
     if(!empty($user))
       $this->user = new $this->model_class($user);
   }

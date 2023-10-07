@@ -4,6 +4,7 @@ namespace Juno\Database\QueryBuilder;
 use Juno\Collection\Collection;
 use Juno\Facades\Manager;
 use Juno\Database\QueryBuilder\Enums\Join as JoinEnum;
+use Closure;
 
 class Builder {
 
@@ -17,7 +18,7 @@ class Builder {
   protected Where $where;
   protected PDOArgs $pdo_args;
 
-  public function __construct(protected string $table, protected string|null $model = null)
+  public function __construct(protected string $table, protected Closure|null $mod_result = null)
   {
     $this->pdo_args = new PDOArgs();
     $this->joins = new Joins();
@@ -179,19 +180,16 @@ class Builder {
     $res = $this->pdo_args->isEmpty() ?
       Manager::queryAll($sql) : Manager::fetchAll($sql, $this->pdo_args->get());
 
-//    $res = collect($res);
-    $res = $this->makeModel(collect($res));
-
-    return $res;
+    return $this->modResult($res, 'collection');
   }
 
   public function first()
   {
     $sql = $this->makeSelectSql();
-//    dd($this->table);
 //    dd($this->pdo_args->get());
     $res = $this->pdo_args->isEmpty() ? Manager::querySingle($sql) : Manager::fetchSingle($sql, $this->pdo_args->get());
-    return $this->makeModel($res);
+
+    return $this->modResult($res, 'model');
   }
 
   public function value(string $column) : string|null
@@ -214,12 +212,8 @@ class Builder {
     return !empty($res);
   }
 
-  protected function makeModel($result) {
-    if((!is_array($result) && !($result instanceof Collection)) || empty($this->model))
-      return $result;
-
-    return $result instanceof Collection ?
-      $result->mapInto($this->model) : new $this->model($result);
+  protected function modResult($result, string $type) {
+    return !empty($this->mod_result) ? ($this->mod_result)($result, $type) : $result;
   }
 
   protected function makeUpdateSql(array $data) : string

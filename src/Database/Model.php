@@ -28,7 +28,8 @@ class Model{
   }
 
   protected function all(){
-    return DB::table($this->table)->get();
+    $res = DB::table($this->table)->get();
+    return $this->modQueryBuilderResult($res, 'collection');
   }
 
   protected function update(array $data)
@@ -38,7 +39,8 @@ class Model{
 
   protected function find(int $id)
   {
-    return DB::table($this->table)->where('id', $id)->first();
+    $res = DB::table($this->table)->where('id', $id)->first();
+    return $this->modQueryBuilderResult($res, 'model');
   }
 
   public function getTable() : string
@@ -58,12 +60,27 @@ class Model{
     return $vars;
   }
 
+  protected function modQueryBuilderResult($result, string $type){
+    if(is_array($result)){
+      if($type == 'model'){
+        return new static($result);
+      }else if($type == 'collection'){
+        return (collect($result))->mapInto(static::class);
+      }
+    }
+
+    return $result;
+  }
+
   public static function __callStatic(string $method, array $args)
   {
     if(method_exists(static::class, $method)){
       return call_user_func_array([(new static()), $method], $args);
     }else if(method_exists(QueryBuilder::class, $method)){
-      $instance = new QueryBuilder((new static())->getTable(), static::class);
+      $instance = new QueryBuilder((new static())->getTable(), function($result, string $type) {
+        return $this->modQueryBuilderResult($result, $type);
+      });
+
       return call_user_func_array([$instance, $method], $args);
     }
   }
