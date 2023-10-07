@@ -77,12 +77,6 @@ class InitView{
     }
 
     $data = (new TopParser($data))->html();
-//    // Replaces {{ {data} }} with executable php tags
-/*    $data = preg_replace('/\{\{(((?!\{\{|\}\})[\s\S])*)\}\}/i','<?= $1 ?>', $data);*/
-//    // Replaces @csrf with input
-//    $data = str_replace("@csrf", '<input type="hidden" name="__csrf" value="' . \Csrf::get() . '">', $data);
-//    // Replaces @method('method') with input
-//    $data = preg_replace("/@method\(('|\")[ ]*([A-z]+)[ ]*(\g1)\)/", '<input type="hidden" name="__method" value="$2">', $data);
 
     file_put_contents(__DIR__ . DIRECTORY_SEPARATOR . 'temp.php', $data);
 
